@@ -69,7 +69,7 @@ frpc-lib-ios:
 	go get golang.org/x/mobile/cmd/gomobile
 	mkdir -p bin/ios
 	gomobile init
-	gomobile bind -v -o bin/ios/ -target=ios ./cmd/libfrpc_mobile
+	gomobile bind -v -o bin/ios/libfrpc.xcframework -target=ios ./cmd/libfrpc_mobile
 
 test: gotest
 
