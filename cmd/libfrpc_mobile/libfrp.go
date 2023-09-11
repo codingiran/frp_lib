@@ -3,7 +3,7 @@ package libfrp
 import (
 	"runtime/debug"
 
-	frpc "frp_lib/cmd/frpc/sub"
+	frpc "frp_lib/cmd/frpc/lib"
 	"frp_lib/pkg/util/version"
 )
 func RunFrpc(cfgFilePath string) (err error) {

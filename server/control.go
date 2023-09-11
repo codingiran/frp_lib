@@ -29,7 +29,6 @@ import (
 
 	"frp_lib/pkg/auth"
 	"frp_lib/pkg/config"
-	"frp_lib/pkg/consts"
 	pkgerr "frp_lib/pkg/errors"
 	"frp_lib/pkg/msg"
 	plugin "frp_lib/pkg/plugin/server"
