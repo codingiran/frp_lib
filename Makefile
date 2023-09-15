@@ -1,6 +1,7 @@
 export PATH := $(GOPATH)/bin:$(PATH)
 export GO111MODULE=on
 LDFLAGS := -s -w
+GCFLAGS := -l -B
 
 all: fmt build
 
@@ -35,25 +36,25 @@ frpc-lib-static:
 	env CGO_ENABLED=1 go build -trimpath -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-archive -o bin/static/ ./cmd/libfrpc
 
 frpc-lib-static-macos:
-	env GOARCH=amd64 CGO_ENABLED=1 go build -trimpath -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-archive -o bin/x86_64/libfrpc.a ./cmd/libfrpc
-	env GOARCH=arm64 CGO_ENABLED=1 go build -trimpath -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-archive -o bin/arm64/libfrpc.a ./cmd/libfrpc
+	env GOARCH=amd64 CGO_ENABLED=1 go build -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-archive -o bin/x86_64/libfrpc.a ./cmd/libfrpc
+	env GOARCH=arm64 CGO_ENABLED=1 go build -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-archive -o bin/arm64/libfrpc.a ./cmd/libfrpc
 	mkdir -p bin/arm64_fat
 	lipo -create bin/x86_64/libfrpc.a bin/arm64/libfrpc.a -output bin/arm64_fat/libfrpc.a
 	cp bin/x86_64/libfrpc.h bin/arm64_fat/libfrpc.h
 
 frpc-lib-unix-x64:
-	env GOARCH=amd64 CGO_ENABLED=1 go build -trimpath -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/x86_64/ ./cmd/libfrpc
+	env GOARCH=amd64 CGO_ENABLED=1 go build -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/x86_64/ ./cmd/libfrpc
 
 frpc-lib-unix-arm64:
-	env GOARCH=arm64 CGO_ENABLED=1 go build -trimpath -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/arm64/ ./cmd/libfrpc
+	env GOARCH=arm64 CGO_ENABLED=1 go build -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/arm64/ ./cmd/libfrpc
 
 frpc-lib-windows64:
-	env CGO_ENABLED=1 go build -trimpath -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/x86_64/frpc.dll ./cmd/libfrpc
+	env GOARCH=amd64 CGO_ENABLED=1 go build -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/x86_64/frpc.dll ./cmd/libfrpc
 	cmd /C dll2lib.bat 64 bin/x86_64/frpc.dll
 	mv frpc.lib bin/x86_64/frpc.lib
 
 frpc-lib-windows32:
-	env GOARCH=386 CGO_ENABLED=1 go build -trimpath -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/x86/frpc.dll ./cmd/libfrpc
+	env GOARCH=386 CGO_ENABLED=1 go build -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS) -extldflags=-static" -buildmode=c-shared -o bin/x86/frpc.dll ./cmd/libfrpc
 	cmd /C dll2lib.bat 32 bin/x86/frpc.dll
 	mv frpc.lib bin/x86/frpc.lib
 
@@ -62,14 +63,14 @@ frpc-lib-android:
 	go get golang.org/x/mobile/cmd/gomobile
 	mkdir -p bin/android
 	gomobile init
-	gomobile bind -v -o bin/android/libfrp.aar -target=android ./cmd/libfrpc_mobile
+	gomobile bind -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS)" -v -o bin/android/libfrp.aar -target=android ./cmd/libfrpc_mobile
 
 frpc-lib-ios:
 	go get golang.org/x/mobile/cmd/gobind
 	go get golang.org/x/mobile/cmd/gomobile
 	mkdir -p bin/ios
 	gomobile init
-	gomobile bind -v -o bin/ios/libfrpc.xcframework -target=ios ./cmd/libfrpc_mobile
+	gomobile bind -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS)" -v -o bin/ios/libfrpc.xcframework -target=ios ./cmd/libfrpc_mobile
 
 test: gotest
 

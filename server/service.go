@@ -70,7 +70,7 @@ type Service struct {
 	kcpListener net.Listener
 
 	// Accept connections using quic
-	quicListener quic.Listener
+	quicListener *quic.Listener
 
 	// Accept connections using websocket
 	websocketListener net.Listener
@@ -363,7 +363,6 @@ func (svr *Service) Run(ctx context.Context) {
 		svr.Close()
 	}
 }
-}
 
 func closeListener(listeners ...net.Listener) (err error) {
 	for _, l := range listeners {
@@ -538,7 +537,7 @@ func (svr *Service) HandleListener(l net.Listener) {
 	}
 }
 
-func (svr *Service) HandleQUICListener(l quic.Listener) {
+func (svr *Service) HandleQUICListener(l *quic.Listener) {
 	// Listen for incoming connections from client.
 	for {
 		c, err := l.Accept(context.Background())
@@ -591,7 +590,7 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 
 	ctl := NewControl(ctx, svr.rc, svr.pxyManager, svr.pluginManager, svr.authVerifier, ctlConn, loginMsg, svr.cfg)
 	if oldCtl := svr.ctlManager.Add(loginMsg.RunID, ctl); oldCtl != nil {
-		oldCtl.allShutdown.WaitDone()
+		oldCtl.WaitClosed()
 	}
 
 	ctl.Start()

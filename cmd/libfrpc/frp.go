@@ -24,13 +24,13 @@ extern DllExport void setProxyFailedCallback(ProxyFailedCallback l);
 import "C"
 
 import (
-	"frp_lib/cmd/frpc/sub"
+	"frp_lib/cmd/frpc/lib"
 	"frp_lib/pkg/util/version"
 )
 
 //export StopFrpc
 func StopFrpc() C.int {
-	if err := sub.StopFrp(); err != nil {
+	if err := lib.StopFrp(); err != nil {
 		println(err.Error())
 		return C.int(0)
 	}
@@ -39,7 +39,7 @@ func StopFrpc() C.int {
 
 //export IsFrpcRunning
 func IsFrpcRunning() bool {
-	return sub.IsFrpRunning()
+	return lib.IsFrpRunning()
 }
 
 //export Version

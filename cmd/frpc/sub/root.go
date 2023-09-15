@@ -23,7 +23,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -35,7 +34,6 @@ import (
 	"frp_lib/pkg/config"
 	"frp_lib/pkg/util/log"
 	"frp_lib/pkg/util/version"
-	"github.com/fatedier/golib/crypto"
 )
 
 const (
@@ -128,12 +126,6 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-// if cmd model
-var cmd bool
-
-var service *client.Service
-var cfgPath string
-
 func runMultipleClients(cfgDir string) error {
 	var wg sync.WaitGroup
 	err := filepath.WalkDir(cfgDir, func(path string, d fs.DirEntry, err error) error {
@@ -156,86 +148,8 @@ func runMultipleClients(cfgDir string) error {
 }
 
 func Execute() {
-	cmd = true
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
-	}
-}
-
-func RunFrpc(cfgFilePath string) (err error) {
-	if IsFrpRunning() {			
-		return fmt.Errorf("frp already started")
-	}
-	cmd = false
-	crypto.DefaultSalt = "frp"
-	return runClient(cfgFilePath)
-}
-
-func NewService(cfgFilePath string) (ser *client.Service, err error) {
-	cmd = false
-	crypto.DefaultSalt = "frp"
-	return returnClient(cfgFilePath)
-}
-
-func returnClient(cfgFilePath string) (svr *client.Service, err error) {
-	cfg, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	return returnService(cfg, pxyCfgs, visitorCfgs, cfgFile)
-}
-
-func StopFrp() (err error) {
-	if !IsFrpRunning() {
-		return fmt.Errorf("frp not started")
-	}
-
-	service.Close()
-	log.Info("frpc is stoped")
-	service = nil
-	return
-}
-
-func IsFrpRunning() bool {
-	return service != nil && !service.IsClosed()
-}
-
-func ReloadFrpc() (err error) {
-	if !IsFrpRunning() {
-		return fmt.Errorf("frp not started")
-	}
-	_, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgPath)
-	if err != nil {
-		return fmt.Errorf("reload frpc proxy config error: %s", err.Error())
-	}
-
-	if err = service.ReloadConf(pxyCfgs, visitorCfgs); err != nil {
-		return fmt.Errorf("reload frpc proxy config error: %s", err.Error())
-	}
-	log.Info("success reload conf")
-	return nil;
-}
-
-func SetServiceProxyFailedFunc(proxyFailedFunc func(err error)) {
-	if service != nil {
-		service.SetProxyFailedFunc(proxyFailedFunc)
-	}
-}
-
-type ServiceClosedListener interface {
-	OnClosed(msg string)
-}
-
-func SetServiceOnCloseListener(listener ServiceClosedListener) {
-	if service != nil {
-		service.SetOnCloseListener(listener)
-	}
-}
-
-func SetServiceReConnectByCount(reConnectByCount bool) {
-	if service != nil {
-		service.ReConnectByCount = reConnectByCount
 	}
 }
 
@@ -311,8 +225,6 @@ func startService(
 		err = errRet
 		return
 	}
-	service = svr
-	cfgPath = cfgFile
 
 	shouldGracefulClose := cfg.Protocol == "kcp" || cfg.Protocol == "quic"
 	// Capture the exit signal if we use kcp or quic.
@@ -320,38 +232,6 @@ func startService(
 		go handleTermSignal(svr)
 	}
 
-	_ = svr.Run(context.Background(), cmd)
+	_ = svr.Run(context.Background(), true)
 	return
-}
-
-func returnService(cfg config.ClientCommonConf, pxyCfgs map[string]config.ProxyConf, visitorCfgs map[string]config.VisitorConf, cfgFile string) (svr *client.Service, err error) {
-	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel,
-		cfg.LogMaxDays, cfg.DisableLogColor)
-
-	if cfg.DNSServer != "" {
-		s := cfg.DNSServer
-		if !strings.Contains(s, ":") {
-			s += ":53"
-		}
-		// Change default dns server for frpc
-		net.DefaultResolver = &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				return net.Dial("udp", s)
-			},
-		}
-	}
-	svr, errRet := client.NewService(cfg, pxyCfgs, visitorCfgs, cfgFile)
-	if errRet != nil {
-		err = errRet
-		return
-	}
-
-	shouldGracefulClose := cfg.Protocol == "kcp" || cfg.Protocol == "quic"
-	// Capture the exit signal if we use kcp.
-	if shouldGracefulClose {
-		go handleTermSignal(svr)
-	}
-
-	return svr, err
 }
