@@ -72,6 +72,13 @@ frpc-lib-ios:
 	gomobile init
 	gomobile bind -trimpath -gcflags=all="$(GCFLAGS)" -ldflags "$(LDFLAGS)" -v -o bin/ios/libfrpc.xcframework -target=ios ./cmd/libfrpc_mobile
 
+frpc-lib-apple:
+	go get golang.org/x/mobile/cmd/gobind
+	go get golang.org/x/mobile/cmd/gomobile
+	mkdir -p bin/apple
+	gomobile init
+	gomobile bind -v -o bin/apple/libfrpc.xcframework -target=ios,iossimulator,macos -iosversion=13.0 ./cmd/libfrpc_mobile
+
 test: gotest
 
 gotest:
