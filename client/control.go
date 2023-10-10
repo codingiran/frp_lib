@@ -175,6 +175,7 @@ func (ctl *Control) HandleNewProxyResp(inMsg *msg.NewProxyResp) {
 		}
 	} else {
 		xl.Info("[%s] start proxy success", inMsg.ProxyName)
+		log.Info("[%s] start proxy success", inMsg.ProxyName)
 	}
 }
 
